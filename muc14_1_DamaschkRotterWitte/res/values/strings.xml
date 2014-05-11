@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">mucBlatt1</string>
+    <string name="action_settings">Settings</string>
+    <string name="edit_message">Editiere mich like one of your french girls</string>
+    <string name="button_send">Send</string>
+    <string name="button_light">Light</string>
+    <string name="button_acc">Accelerometer</string>
+    <string name="button_orientation">Orientation</string>
+    <string name="button_gps">GPS</string>
+    <string name="title_activity_display_message">display Message</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_light__sensor">Light_Sensor</string>
+    <string name="title_activity_acceleration">Acceleration</string>
+    <string name="title_activity_orienation">Orientation</string>
+    <string name="title_activity_orientation">Orientation</string>
+    <string name="title_activity_gps">GPS</string>
+
+</resources>

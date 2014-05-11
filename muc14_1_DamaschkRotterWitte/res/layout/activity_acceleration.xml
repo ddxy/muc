@@ -1,0 +1,68 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".Acceleration" >
+
+    <TextView
+        android:id="@+id/Roll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textAzimuth"
+        android:layout_marginTop="59dp"
+        android:text="z-Achse"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <TextView
+        android:id="@+id/textRoll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/Roll"
+        android:layout_alignLeft="@+id/Roll"
+        android:layout_marginBottom="28dp"
+        android:text="0" />
+    
+    
+
+    <TextView
+        android:id="@+id/Azimuth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textRoll"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="16dp"
+        android:text="x-Achse"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <TextView
+        android:id="@+id/textYAxis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/Roll"
+        android:layout_below="@+id/Roll"
+        android:text="0" />
+
+    <TextView
+        android:id="@+id/textAzimuth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/Azimuth"
+        android:layout_below="@+id/Azimuth"
+        android:text="0" />
+
+    <TextView
+        android:id="@+id/yAxis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/textRoll"
+        android:layout_alignLeft="@+id/textRoll"
+        android:text="y-Achse"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+    
+
+
+</RelativeLayout>
