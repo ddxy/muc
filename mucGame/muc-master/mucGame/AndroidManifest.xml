@@ -7,10 +7,8 @@
     <uses-sdk
         android:minSdkVersion="8"
         android:targetSdkVersion="19" />
-
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-
+<uses-permission android:name="android.permission.BLUETOOTH" /> 
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -24,14 +22,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name="com.example.mucgame.Game"
-            android:label="@string/title_activity_game"
-            android:parentActivityName="com.example.mucgame.MainActivity" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.example.mucgame.MainActivity" />
         </activity>
     </application>
 
