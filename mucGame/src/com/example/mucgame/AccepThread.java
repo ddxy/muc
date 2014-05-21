@@ -3,6 +3,7 @@ package com.example.mucgame;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Random;
 import java.util.UUID;
 
 import android.annotation.SuppressLint;
@@ -54,97 +55,80 @@ public class AccepThread extends Thread {
 			e2.printStackTrace();
 		}
 
-		if (!socketCreated) {
+		if (socket != null) {
+			mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
 			while (true) {
 				try {
+					
+					Random rand = new Random();
+					int randomNum = rand.nextInt(10001 - 1000) + 1000;
+					sleep(randomNum);
+					rand = new Random();
+					int gesture = rand.nextInt(8 - 0) + 0;
+					String[] gestures = { "square_angle", "square",
+							"right", "left", "up", "down", "circle_right",
+							"circle_left"
+
+					};
+
+					output.write(("gesture:" + gestures[gesture]).getBytes());
+					output.flush();
+					
+					mHandler.obtainMessage(Game.INT_GESTURE_TO_CREATE,
+							gestures[0]).sendToTarget();
+					
+					synchronized (mHandler) {
+						try {
+							mHandler.wait();
+						} catch (InterruptedException e) {
+
+						}
+					}
+					// give him about 5sec to perform zee figure
+					sleep(5000);
+					Game.gameOnGoing = false;
+					
 					byte[] byteMsgReceived = new byte[100];
 					int bytelength = input.read(byteMsgReceived);
 					String msgReceived = new String(byteMsgReceived, 0,
 							bytelength);
-					System.out.println(msgReceived);
-					if (msgReceived.startsWith("connected")) {
-						mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
-						System.out.println("Player connected. Lets play.");
-						// send Random gesture:
-						Game.gesture = "";
-						Game.gestureNeededToSend = true;
 
-						while(Game.gesture == ""){
-							sleep(1000);
-						}
+					if (msgReceived.startsWith("time:")) {
+						String s_timeClient = msgReceived.substring(5,
+								msgReceived.length());
 
-						String gesture = Game.gesture;
+						Long client_time = Long.valueOf(s_timeClient).longValue();
 						
-						// asynch. is allowed.
-						mHandler.obtainMessage(Game.INT_GESTURE_TO_SEND, gesture).sendToTarget();
-						Game.gesture = "";
-						output.write(("gesture:" + gesture).getBytes());
-						output.flush();
-						
-					} else if (msgReceived.startsWith("gesture:")) {
-						String gesture = msgReceived.substring(8, msgReceived.length());
-						//do sth. call game methods.
-						System.out.println(gesture);
-						mHandler.obtainMessage(Game.INT_GESTURE_TO_CREATE, gesture).sendToTarget();
-						synchronized (mHandler) {
-						    try {
-						    	mHandler.wait();
-						    } catch (InterruptedException e) {
-						    	
-						    }
-						}
-						//give him about 3sec to perform zee figure
-						sleep(10000);
+						Long server_time = Game.time_finished- Game.time_started;
+						System.out.println(server_time);
+						System.out.println(Game.time_finished);
+						System.out.println(Game.time_started);
+						if (Game.gestureNeededToWin == false) {
 
-						//unbind listener
-						if(Game.winner){
-							mHandler.obtainMessage(Game.INT_WON, gesture).sendToTarget();
-							output.write("win".getBytes());
-							output.flush();
-							
+							//we also lose, update game ui
+							mHandler.obtainMessage(Game.INT_LOST)
+							.sendToTarget();
+							if (client_time < 10000) {
 
-							Game.gesture = "";
-							Game.gestureNeededToSend = true;
-							while(Game.gesture == ""){
-								sleep(1000);
+								output.write(("result:win").getBytes());
+								output.flush();
+							}else {
+								output.write(("result:loss").getBytes());
+								output.flush();
 							}
-
-							gesture = Game.gesture;
-							
-							// asynch. is allowed.
-							mHandler.obtainMessage(Game.INT_GESTURE_TO_SEND, gesture).sendToTarget();
-							Game.gesture = "";
-							output.write(("gesture:" + gesture).getBytes());
+						}else if (client_time - server_time > 0) {
+							output.write(("result:loss").getBytes());
 							output.flush();
-							//we won, therefore bind listener, get gesture with timeout and send it to the server.
+							mHandler.obtainMessage(Game.INT_WON)
+							.sendToTarget();
 						}else {
-							mHandler.obtainMessage(Game.INT_LOST, gesture).sendToTarget();
-							output.write("lose".getBytes());
+							output.write(("result:loss").getBytes());
 							output.flush();
+							mHandler.obtainMessage(Game.INT_LOST)
+							.sendToTarget();
+
 						}
-
-					} else if (msgReceived.startsWith("win")) {
-						mHandler.obtainMessage(Game.INT_LOST).sendToTarget();
-
-						// we lost therefore the other won must send a gesture
-						// to us
-
-					} else if (msgReceived.startsWith("lose")) {
-						//we won, enemy lost.
-						mHandler.obtainMessage(Game.INT_WON).sendToTarget();
-						Game.gesture = "";
-						Game.gestureNeededToSend = true;
-						while(Game.gesture == ""){
-							sleep(1000);
-						}
-
-						String gesture = Game.gesture;
-						
-						// asynch. is allowed.
-						mHandler.obtainMessage(Game.INT_GESTURE_TO_SEND, gesture).sendToTarget();
-						Game.gesture = "";
-						output.write(("gesture:" + gesture).getBytes());
-						output.flush();
+						//begin again
 
 					}
 				} catch (IOException | InterruptedException e) {

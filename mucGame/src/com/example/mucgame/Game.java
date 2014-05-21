@@ -44,7 +44,7 @@ import android.os.Build;
 
 public class Game extends ActionBarActivity {
 	public static boolean winner;
-	public static boolean gestureNeededToSend = false;
+	public static boolean gameOnGoing = false;
 	public static boolean gestureNeededToWin = false;
 	public static String gesture = "";
 	private static ImageView  image;
@@ -53,13 +53,13 @@ public class Game extends ActionBarActivity {
 	private Button start;
 	private Context context;
 	public static final int INT_CONNECTED = 1;
-	public  static int INT_GESTURE_TO_SEND = 2;
 	public  static int INT_LOST = 3;
 	public  static int INT_WON = 4;
 	public  static int INT_UNBIND = 5;
 	public  static int INT_BIND = 6;
 	public  static int INT_GESTURE_TO_CREATE = 7;
-	
+	public static long time_started;
+	public static long time_finished;
 	
 	
 	private IGestureRecognitionService mRecService;
@@ -72,14 +72,12 @@ public class Game extends ActionBarActivity {
 			 String gesture_created = distribution.getBestMatch();
 			 System.out.println("desired:" + gesture + " and received:" + gesture_created);
 			 System.out.println(gesture.equals(gesture_created));
-			 if(gestureNeededToWin && (gesture.equals(gesture_created))){
-				 winner = true;
-				 gestureNeededToWin = false;
-			 }else if (gestureNeededToSend) {
-			 
-				gesture = gesture_created;
-				gestureNeededToSend = false;
-			}
+			 if(gameOnGoing && !gestureNeededToWin && (gesture.equals(gesture_created))){
+				 System.out.println("set:" + time_finished);
+				 time_finished = System.currentTimeMillis();
+				 System.out.println("after:" + time_finished);
+				 gestureNeededToWin = true;
+			 }
 			 System.out.println(gesture_created);
 			
 		}
@@ -125,32 +123,17 @@ public class Game extends ActionBarActivity {
 		public void handleMessage(android.os.Message msg) {
 			if(msg.what == INT_CONNECTED){
 				 Toast.makeText(getApplicationContext(),
-	                     "Make a gesture" , Toast.LENGTH_LONG)
+	                     "GET READY" ,3000)
 	                     .show();
 				//both player connected. start game
 				
 			//show pic which enemy must create
-			}else if (msg.what == INT_GESTURE_TO_SEND) {
-				String gesture =  (String) msg.obj;
-				switch(gesture) {
-				case "square_angle": image.setImageResource(R.drawable.square_angle); break;
-				case "square": image.setImageResource(R.drawable.square); break;
-				case "right": image.setImageResource(R.drawable.right); break;
-				case "left": image.setImageResource(R.drawable.left); break;
-				case "up": image.setImageResource(R.drawable.up); break;
-				case "down": image.setImageResource(R.drawable.down); break;
-				case "circle_right": image.setImageResource(R.drawable.circle_right); break;
-				case "circle_left": image.setImageResource(R.drawable.circle_left); break;
-				
-			}
-
 			}else if (msg.what == INT_GESTURE_TO_CREATE) {
 				 gesture =  (String) msg.obj;
+
 				 Toast.makeText(getApplicationContext(),
 	                     "Do a " + gesture , Toast.LENGTH_LONG)
 	                     .show();
-				 winner = false;
-				 gestureNeededToWin = true;
 					switch(gesture) {
 					case "square_angle": image.setImageResource(R.drawable.square_angle); break;
 					case "square": image.setImageResource(R.drawable.square); break;
@@ -161,6 +144,9 @@ public class Game extends ActionBarActivity {
 					case "circle_right": image.setImageResource(R.drawable.circle_right); break;
 					case "circle_left": image.setImageResource(R.drawable.circle_left); break;
 					}
+					 gestureNeededToWin = false;
+					 gameOnGoing = true;
+					 time_started = System.currentTimeMillis();
 					
 					synchronized (this) {
 						notifyAll();
@@ -171,13 +157,13 @@ public class Game extends ActionBarActivity {
 				int currPoints = Integer.parseInt(opponentpoints.getText().toString());
 				opponentpoints.setText(String.valueOf(currPoints+1));
 				 Toast.makeText(getApplicationContext(),
-	                     "Your opponent won this round" , Toast.LENGTH_LONG)
+	                     "Your opponent won this round. Get Ready" , 3000)
 	                     .show();
 			}else if (msg.what == INT_WON) {
 				int currPoints = Integer.parseInt(youpoints.getText().toString());
 				youpoints.setText(String.valueOf(currPoints+1));
 				 Toast.makeText(getApplicationContext(),
-	                     "You won this round, make a new Gesture!" , Toast.LENGTH_LONG)
+	                     "You won this round. Get Ready" , 3000)
 	                     .show();
 			}
 		};
