@@ -55,21 +55,20 @@ public class ConnectThread extends Thread {
 				OutputStream output = mSocket.getOutputStream()) {
 			mSocket.getOutputStream();
 			System.out.println("INPUT OUTPUT");
-			output.write("connected\n".getBytes());
-			output.flush();
+			mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
 			byte[] byteMsgReceived = new byte[100];
 
 			while (true) {
 				int bytelength = input.read(byteMsgReceived);
 				String msgReceived = new String(byteMsgReceived, 0, bytelength);
-				System.out.println(msgReceived);
+				System.out.println("hello:" + msgReceived);
 				if (msgReceived.startsWith("gesture:")) {
 					String gesture = msgReceived.substring(8,
 							msgReceived.length());
-					// do sth. call game methods.
-					System.out.println(gesture);
-					mHandler.obtainMessage(Game.INT_GESTURE_TO_CREATE, gesture)
-							.sendToTarget();
+
+					mHandler.obtainMessage(Game.INT_GESTURE_TO_CREATE,
+							gesture).sendToTarget();
+					
 					synchronized (mHandler) {
 						try {
 							mHandler.wait();
@@ -77,63 +76,26 @@ public class ConnectThread extends Thread {
 
 						}
 					}
-					// give him about 3sec to perform zee figure
-					sleep(10000);
-
-					// unbind listener
-					if (Game.winner) {
-						mHandler.obtainMessage(Game.INT_WON, gesture)
-								.sendToTarget();
-						output.write("win".getBytes());
+					// give him about 5sec to perform zee figure
+					sleep(5000);
+					Game.gameOnGoing = false;
+					if (Game.gestureNeededToWin == false) {
+						//client lost
+						output.write(("time:10000").getBytes());
 						output.flush();
-
-						Game.gesture = "";
-						Game.gestureNeededToSend = true;
-						while (Game.gesture == "") {
-							sleep(1000);
-						}
-
-						gesture = Game.gesture;
-
-						// asynch. is allowed.
-						mHandler.obtainMessage(Game.INT_GESTURE_TO_SEND,
-								gesture).sendToTarget();
-						Game.gesture = "";
-						output.write(("gesture:" + gesture).getBytes());
-						output.flush();
-						// we won, therefore bind listener, get gesture with
-						// timeout and send it to the server.
-					} else {
-						mHandler.obtainMessage(Game.INT_LOST, gesture)
-								.sendToTarget();
-						output.write("lose".getBytes());
+						
+					}else {
+						Long client_time = Game.time_finished- Game.time_started;
+						output.write(("time:" + Long.toString(client_time)).getBytes());
 						output.flush();
 					}
+	
 
-				} else if (msgReceived.startsWith("win")) {
-					mHandler.obtainMessage(Game.INT_LOST).sendToTarget();
-
-					// we lost therefore the other won must send a gesture
-					// to us
-
-				} else if (msgReceived.startsWith("lose")) {
-					// we won, enemy lost.
+				} else if (msgReceived.startsWith("result:win")) {
 					mHandler.obtainMessage(Game.INT_WON).sendToTarget();
-					Game.gesture = "";
-					Game.gestureNeededToSend = true;
-					while (Game.gesture == "") {
-						sleep(1000);
-					}
 
-					String gesture = Game.gesture;
-
-					// asynch. is allowed.
-					mHandler.obtainMessage(Game.INT_GESTURE_TO_SEND, gesture)
-							.sendToTarget();
-					Game.gesture = "";
-					output.write(("gesture:" + gesture).getBytes());
-					output.flush();
-
+				} else if (msgReceived.startsWith("result:loss")) {
+					mHandler.obtainMessage(Game.INT_LOST).sendToTarget();
 				}
 			}
 

@@ -98,8 +98,7 @@ public class MainActivity extends ActionBarActivity {
 						.getItemAtPosition(position);
 
 				// starts client with selected item as server
-				Toast.makeText(getApplicationContext(), "Starting Game",
-						Toast.LENGTH_LONG).show();
+
 //				ConnectThread clientThread = new ConnectThread(serverDevice);
 //				clientThread.start();
 
