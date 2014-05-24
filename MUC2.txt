@@ -1,0 +1,22 @@
+1. Reading Assignment
+
+a) What are the main bene?ts of DTW compared to Hidden Markov Model (HMM) based approaches?
+- es wird nicht so ein große set an trainings gestures benötigt wie bei HMM; DTW braucht nur ein einziges beispiel
+- HMM setzt oft wissen über das vokabular voraus um die modelle angemessen zu konifurieren (zb anzahl an states). --> Problem, wenn nutzer personalisierte gesten aussuchen können. DTW kann personalisierte gesten haben
+
+
+b) Explain the meaning of local matching cost, total matching cost, and DTW distance. How are they calculated?
+-local: herausfinden des optimalen pfades von (1,1) zum  punkt (i,j). verwende optimale pfade von (1,1) zu den 3 vorgängern von i,j (i-1,j;i,j-1;i-1,j-1) und berechne minimum ?!?!!
+-total: distanz zwischen Si und Tj, die durch das minimale akkumulative distanz aller möglichen pfade evaluiert wird ?!
+distance: abstand zwischen 2 zeitsamples. wird mittels der euclidischen distanz über "matching quantized time series of acceleration" berechnet.
+berechne distanz zwischen 2 zeitsamples S und T an der stelle des matchings (Si und Tj). berechne distanzen zwischen S und T an den stellen i-1,j;i,j-1 und i-1,j-1 und bestimmt minimum. DTW distanz = Distanz zwischen Si und Tj + bestimmtes minimum des vorherigen schrittes
+
+c) How would an optimal path with equal time series look like on the DTW grid? What does a horizontal and vertical
+line of the path mean, respectively?
+
+d) What is the idea of template adaptation? Brie?y describe the involved concepts of positive and negative updates.
+-berücksichtigung von variationen der gesten samples eines nutzers an unterschiedlichen tagen ?!
+-positive update: falls beide templates einer vokabular geste der bibliothek mindestens einen tag alt sind und die input geste korrekt erkannt wurde, lösche das ältere template
+--> nur falsch erkannte gesten müssen vom nutzer gemeldet werden
+-negative update: wie positive update, nur dass die input geste falsch erkannt wurde. dann ersetzt die input geste das ältere template
+--> nutzer muss bei falscher erkennung die richtige geste aufzeigen/bestimmen
