@@ -7,11 +7,13 @@ import java.util.Random;
 import java.util.UUID;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.os.Handler;
-import android.widget.Toast;
 
 public class AccepThread extends Thread {
 	private BluetoothServerSocket mServerSocket;
@@ -20,9 +22,11 @@ public class AccepThread extends Thread {
 	private BluetoothAdapter mAdapter = BluetoothAdapter.getDefaultAdapter();;
 	private boolean socketCreated = false;
 	private Handler mHandler;
-
-	public AccepThread(Handler mHandler) {
-
+	private Activity context;
+	private ProgressDialog serverDialog;
+	
+	public AccepThread(Handler mHandler, Activity context) {
+		this.context = context;
 		this.mHandler = mHandler;
 		try {
 			mServerSocket = mAdapter.listenUsingRfcommWithServiceRecord(NAME,
@@ -36,6 +40,15 @@ public class AccepThread extends Thread {
 	@SuppressLint("NewApi")
 	public void run() {
 		super.run();
+
+		context.runOnUiThread(new Runnable() {
+			public void run() {
+				serverDialog = ProgressDialog.show(context, "Waiting for Opponent",
+						"Please wait...", true);
+			}
+		});
+		
+		
 		BluetoothSocket socket = null;
 		try {
 			System.out.println("socket server acceptbefore");
@@ -45,6 +58,14 @@ public class AccepThread extends Thread {
 			e1.printStackTrace();
 		}
 
+		context.runOnUiThread(new Runnable() {
+			public void run() {
+				if (serverDialog.isShowing())
+					serverDialog.dismiss();
+			}
+		});
+		
+		
 		InputStream input = null;
 		OutputStream output = null;
 		try {
@@ -56,27 +77,31 @@ public class AccepThread extends Thread {
 		}
 
 		if (socket != null) {
-			mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
 			while (true) {
 				try {
+					// start new round
+					output.write(("game:new_round").getBytes());
+					output.flush();
+					mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
 					
+					// wait for 1 to 10s
 					Random rand = new Random();
 					int randomNum = rand.nextInt(10001 - 1000) + 1000;
 					sleep(randomNum);
+					
+					// choose a gesture
 					rand = new Random();
 					int gesture = rand.nextInt(8 - 0) + 0;
 					String[] gestures = { "square_angle", "square",
 							"right", "left", "up", "down", "circle_right",
 							"circle_left"
-
 					};
-
 					output.write(("gesture:" + gestures[gesture]).getBytes());
 					output.flush();
 					
+					// save timestamp and display gesture
 					mHandler.obtainMessage(Game.INT_GESTURE_TO_CREATE,
-							gestures[0]).sendToTarget();
-					
+							gestures[gesture]).sendToTarget();
 					synchronized (mHandler) {
 						try {
 							mHandler.wait();
@@ -84,57 +109,65 @@ public class AccepThread extends Thread {
 
 						}
 					}
-					// give him about 5sec to perform zee figure
-					sleep(5000);
-					Game.gameOnGoing = false;
 					
+					// give him about 5sec to perform zee figure
+					//sleep(5000);
+					//Game.gameOnGoing = false;
+					
+					// wait for client to send time needed to perform the gesture
 					byte[] byteMsgReceived = new byte[100];
-					int bytelength = input.read(byteMsgReceived);
-					String msgReceived = new String(byteMsgReceived, 0,
-							bytelength);
-
-					if (msgReceived.startsWith("time:")) {
-						String s_timeClient = msgReceived.substring(5,
-								msgReceived.length());
-
-						Long client_time = Long.valueOf(s_timeClient).longValue();
-						
-						Long server_time = Game.time_finished- Game.time_started;
-						System.out.println(server_time);
-						System.out.println(Game.time_finished);
-						System.out.println(Game.time_started);
-						if (Game.gestureNeededToWin == false) {
-
-							//we also lose, update game ui
-							mHandler.obtainMessage(Game.INT_LOST)
-							.sendToTarget();
-							if (client_time < 10000) {
-
-								output.write(("result:win").getBytes());
-								output.flush();
-							}else {
-								output.write(("result:loss").getBytes());
-								output.flush();
-							}
-						}else if (client_time - server_time > 0) {
-							output.write(("result:loss").getBytes());
-							output.flush();
-							mHandler.obtainMessage(Game.INT_WON)
-							.sendToTarget();
-						}else {
-							output.write(("result:loss").getBytes());
-							output.flush();
-							mHandler.obtainMessage(Game.INT_LOST)
-							.sendToTarget();
-
+					long client_time = 0;
+					
+					while(true) {
+						int bytelength = input.read(byteMsgReceived);
+						String msgReceived = new String(byteMsgReceived, 0,
+								bytelength);
+	
+						if (msgReceived.startsWith("time:")) {
+							String s_timeClient = msgReceived.substring(5,
+									msgReceived.length());
+	
+							client_time = Long.valueOf(s_timeClient).longValue();
+							break;
+						} else if (msgReceived.startsWith("game:quit")) {
+							mHandler.obtainMessage(Game.INT_QUIT).sendToTarget();
 						}
-						//begin again
-
 					}
+					
+					// compare the times needed to perform the gestures
+					// wait for server player to perform the gesture
+					while (!Game.gestureNeededToWin) {
+						sleep(1000);
+					}
+					long server_time = Game.time_finished - Game.time_started;
+					System.out.println("Server time: " + server_time);
+					System.out.println("Client time: " + client_time);
+					
+					if (client_time < server_time) {
+						//client wins
+						mHandler.obtainMessage(Game.INT_LOST)
+						.sendToTarget();
+						output.write(("result:win").getBytes());
+						output.flush();
+						
+					} else {
+						//server wins
+						mHandler.obtainMessage(Game.INT_WON)
+						.sendToTarget();
+						output.write(("result:loss").getBytes());
+						output.flush();
+					}
+					
+					// wait 5 seconds until the next round starts
+					sleep(5000);
+					
 				} catch (IOException | InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 					try {
+						output.write(("game:quit").getBytes());
+						output.close();
+						input.close();
 						mServerSocket.close();
 						break;
 					} catch (IOException e1) {

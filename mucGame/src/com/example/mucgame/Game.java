@@ -1,50 +1,30 @@
 package com.example.mucgame;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.EventListener;
-import java.util.UUID;
-
-import de.dfki.ccaal.gestures.Distribution;
-import de.dfki.ccaal.gestures.IGestureRecognitionListener;
-import de.dfki.ccaal.gestures.IGestureRecognitionService;
-
-import android.R.bool;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.view.LayoutInflater;
+import android.os.Vibrator;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.os.Build;
+import de.dfki.ccaal.gestures.Distribution;
+import de.dfki.ccaal.gestures.IGestureRecognitionListener;
+import de.dfki.ccaal.gestures.IGestureRecognitionService;
 
 public class Game extends ActionBarActivity {
 	public static boolean winner;
-	public static boolean gameOnGoing = false;
 	public static boolean gestureNeededToWin = false;
 	public static String gesture = "";
 	private static ImageView  image;
@@ -52,12 +32,14 @@ public class Game extends ActionBarActivity {
 	private String who;
 	private Button start;
 	private Context context;
+	private Thread commThread;
 	public static final int INT_CONNECTED = 1;
 	public  static int INT_LOST = 3;
 	public  static int INT_WON = 4;
 	public  static int INT_UNBIND = 5;
 	public  static int INT_BIND = 6;
 	public  static int INT_GESTURE_TO_CREATE = 7;
+	public  static int INT_QUIT = 8;
 	public static long time_started;
 	public static long time_finished;
 	
@@ -72,7 +54,7 @@ public class Game extends ActionBarActivity {
 			 String gesture_created = distribution.getBestMatch();
 			 System.out.println("desired:" + gesture + " and received:" + gesture_created);
 			 System.out.println(gesture.equals(gesture_created));
-			 if(gameOnGoing && !gestureNeededToWin && (gesture.equals(gesture_created))){
+			 if(!gestureNeededToWin && (gesture.equals(gesture_created))){
 				 System.out.println("set:" + time_finished);
 				 time_finished = System.currentTimeMillis();
 				 System.out.println("after:" + time_finished);
@@ -125,6 +107,7 @@ public class Game extends ActionBarActivity {
 				 Toast.makeText(getApplicationContext(),
 	                     "GET READY" ,3000)
 	                     .show();
+				 roundnumber.setText("" + (Integer.parseInt(roundnumber.getText().toString()) + 1));
 				//both player connected. start game
 				
 			//show pic which enemy must create
@@ -145,7 +128,6 @@ public class Game extends ActionBarActivity {
 					case "circle_left": image.setImageResource(R.drawable.circle_left); break;
 					}
 					 gestureNeededToWin = false;
-					 gameOnGoing = true;
 					 time_started = System.currentTimeMillis();
 					
 					synchronized (this) {
@@ -162,9 +144,17 @@ public class Game extends ActionBarActivity {
 			}else if (msg.what == INT_WON) {
 				int currPoints = Integer.parseInt(youpoints.getText().toString());
 				youpoints.setText(String.valueOf(currPoints+1));
-				 Toast.makeText(getApplicationContext(),
+				Toast.makeText(getApplicationContext(),
 	                     "You won this round. Get Ready" , 3000)
 	                     .show();
+				Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+				if(v != null)
+					v.vibrate(250);
+			}else if (msg.what == INT_QUIT) {
+				Toast.makeText(getApplicationContext(),
+	                     "The other player left the game!" , 3000)
+	                     .show();
+				Game.this.finish();
 			}
 		};
 	};
@@ -184,33 +174,33 @@ public class Game extends ActionBarActivity {
 		context = this;
 		
 		who = getIntent().getStringExtra("who");
-		
-
-		
-		//start clientThread
-		if(who.equals("Client")) {
-			BluetoothDevice serverDevice = getIntent().getExtras().getParcelable("serverDevice");
-			ConnectThread clientThread = new ConnectThread(serverDevice, mHandler);
-			clientThread.start();
-		}
-		
-		//start ServerThread
-		if(who.equals("Server")) {
-			AccepThread serverThread = new AccepThread(mHandler);
-			serverThread.start();
-
-		}
-
 	}
 	
-	
+	public void onCheat(View view) {
+		time_finished = System.currentTimeMillis();
+		gestureNeededToWin = true;
+	}
 
 	@Override
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		super.onStart();
 		bind();
+		//start clientThread
+		if(who.equals("Client")) {
+			BluetoothDevice serverDevice = getIntent().getExtras().getParcelable("serverDevice");
+			commThread = new ConnectThread(serverDevice, mHandler);
+			commThread.start();
+		}
+		
+		//start ServerThread
+		if(who.equals("Server")) {
+			commThread = new AccepThread(mHandler, this);
+			commThread.start();
+
+		}
 	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -251,6 +241,13 @@ public class Game extends ActionBarActivity {
 		// TODO Auto-generated method stub
 		super.onPause();
 		unbind();
+		commThread.interrupt();
+		try {
+			commThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		finish();
 	}
 	
 	
