@@ -3,6 +3,7 @@ package com.example.mucgame;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.UUID;
 
 import android.annotation.SuppressLint;
@@ -55,14 +56,18 @@ public class ConnectThread extends Thread {
 				OutputStream output = mSocket.getOutputStream()) {
 			mSocket.getOutputStream();
 			System.out.println("INPUT OUTPUT");
-			mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
+			
 			byte[] byteMsgReceived = new byte[100];
 
+			try {
 			while (true) {
 				int bytelength = input.read(byteMsgReceived);
 				String msgReceived = new String(byteMsgReceived, 0, bytelength);
 				System.out.println("hello:" + msgReceived);
-				if (msgReceived.startsWith("gesture:")) {
+				if (msgReceived.equals("game:new_round")) {
+					mHandler.obtainMessage(Game.INT_CONNECTED).sendToTarget();
+				
+				} else if (msgReceived.startsWith("gesture:")) {
 					String gesture = msgReceived.substring(8,
 							msgReceived.length());
 
@@ -76,30 +81,32 @@ public class ConnectThread extends Thread {
 
 						}
 					}
-					// give him about 5sec to perform zee figure
-					sleep(5000);
-					Game.gameOnGoing = false;
-					if (Game.gestureNeededToWin == false) {
-						//client lost
-						output.write(("time:10000").getBytes());
-						output.flush();
-						
-					}else {
-						Long client_time = Game.time_finished- Game.time_started;
-						output.write(("time:" + Long.toString(client_time)).getBytes());
-						output.flush();
+					
+					// wait until a gesture is recognized
+					while(!Game.gestureNeededToWin) {
+						sleep(1000);
 					}
-	
+					
+					// send the time needed to the server
+					long client_time = Game.time_finished- Game.time_started;
+					output.write(("time:" + Long.toString(client_time)).getBytes());
+					output.flush();
+					
 
 				} else if (msgReceived.startsWith("result:win")) {
 					mHandler.obtainMessage(Game.INT_WON).sendToTarget();
 
 				} else if (msgReceived.startsWith("result:loss")) {
 					mHandler.obtainMessage(Game.INT_LOST).sendToTarget();
+				} else if (msgReceived.startsWith("game:quit")) {
+					mHandler.obtainMessage(Game.INT_QUIT).sendToTarget();
 				}
 			}
+			} catch(InterruptedException | ClosedByInterruptException e) {
+				output.write("game:quit".getBytes());
+			}
 
-		} catch (IOException | InterruptedException e) {
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

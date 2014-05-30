@@ -1,11 +1,21 @@
 1. Reading Assignment
 
 a) What are the main bene?ts of DTW compared to Hidden Markov Model (HMM) based approaches?
+DTW needs much less computing power and less training examples to achieve equally good
+gesture recognition performance. This is especially important on tightly constrained mobile devices
+like smartphones or tablets. Additionally HMM often require a priori knowledge about the number
+of gestures to distinguish. DTW compares only the individual distances for each gesture and is 
+therefore not dependant on any knowledge about the number of gestures. 
+
 - es wird nicht so ein große set an trainings gestures benötigt wie bei HMM; DTW braucht nur ein einziges beispiel
 - HMM setzt oft wissen über das vokabular voraus um die modelle angemessen zu konifurieren (zb anzahl an states). --> Problem, wenn nutzer personalisierte gesten aussuchen können. DTW kann personalisierte gesten haben
 
 
 b) Explain the meaning of local matching cost, total matching cost, and DTW distance. How are they calculated?
+DTW matches samples A and B at different times t1 ... tn and T1 ... Tm. These points in time are layed out in a 2 dimensional grid. A monotonic path through this grid from (t1,T1) to (tn,Tm) is called a total path with an assigned cost equal to the sum of all local matching costs.
+The local matching cost for a point (tx,Ty) is the euclidean distance between A(tx) and B(ty).
+The final DTW distance ist the minimal matching cost of all possible total matchings.
+
 -local: herausfinden des optimalen pfades von (1,1) zum  punkt (i,j). verwende optimale pfade von (1,1) zu den 3 vorgängern von i,j (i-1,j;i,j-1;i-1,j-1) und berechne minimum ?!?!!
 -total: distanz zwischen Si und Tj, die durch das minimale akkumulative distanz aller möglichen pfade evaluiert wird ?!
 distance: abstand zwischen 2 zeitsamples. wird mittels der euclidischen distanz über "matching quantized time series of acceleration" berechnet.
@@ -13,8 +23,12 @@ berechne distanz zwischen 2 zeitsamples S und T an der stelle des matchings (Si 
 
 c) How would an optimal path with equal time series look like on the DTW grid? What does a horizontal and vertical
 line of the path mean, respectively?
+If the template and the performed gesture match exactly the path through the grid is exactly diagonal.
+If the sample is performed faster than the template, the line gets vertical, if the template is performed faster, it gets horizontal.
 
 d) What is the idea of template adaptation? Brie?y describe the involved concepts of positive and negative updates.
+The way, gestures are performed often varies depending on the day. To accommodate this, the template needs to be adapted. The paper proposes a positive update strategy and a negative update strategy. The positive update scheme replaces old templates with newer ones if the older templates are at least one day old and the new template is correctly classified. The negative update scheme replaces templates if they are incorrectly classified. 
+
 -berücksichtigung von variationen der gesten samples eines nutzers an unterschiedlichen tagen ?!
 -positive update: falls beide templates einer vokabular geste der bibliothek mindestens einen tag alt sind und die input geste korrekt erkannt wurde, lösche das ältere template
 --> nur falsch erkannte gesten müssen vom nutzer gemeldet werden

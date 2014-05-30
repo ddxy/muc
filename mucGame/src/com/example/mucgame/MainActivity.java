@@ -2,10 +2,8 @@ package com.example.mucgame;
 
 import java.util.ArrayList;
 import java.util.Set;
-
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
+import java.util.UUID;
+import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -13,27 +11,26 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelUuid;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
-import android.os.Build;
 
+@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
 public class MainActivity extends ActionBarActivity {
 
 	ArrayAdapter<BluetoothDevice> mArrayAdapter;
 	private BluetoothAdapter mBluetoothAdapter;
 	private static int REQUEST_ENABLE_BT = 1;
 	ListView serverlist;
-	ProgressDialog serverDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -73,14 +70,45 @@ public class MainActivity extends ActionBarActivity {
 			for (BluetoothDevice device : pairedDevices) {
 				// Add the name and address to an array adapter to show in a
 				// ListView
-				System.out.println("bluetoothgeräte paired: "
+				System.out.println("bluetoothgerï¿½te paired: "
 						+ device.getAddress() + device.getName());
-				// du solltest nur die devices hinzufügen, die auch wirklich
+				// du solltest nur die devices hinzufï¿½gen, die auch wirklich
 				// aktiv sind.
-				mArrayAdapter.add(device);
+				ParcelUuid[] uuids = device.getUuids();
+				if(uuids != null)
+				for(ParcelUuid uuid : uuids) {
+					if(uuid.getUuid().equals(new UUID(0x4080ad8d8ba24846L, 0x8803a3206a8975beL))) {
+						mArrayAdapter.add(device);
+						if (mArrayAdapter != null)
+							serverlist.setAdapter(mArrayAdapter);
+						break;
+					}
+				}
 			}
 		}
 
+		mBluetoothAdapter.startDiscovery();
+		IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+		registerReceiver(new BroadcastReceiver() {
+			public void onReceive(Context context, Intent intent) {
+				String action = intent.getAction();
+				if(BluetoothDevice.ACTION_FOUND.equals(action)) {
+					
+					BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+					ParcelUuid[] uuids = device.getUuids();
+					if(uuids != null)
+					for(ParcelUuid uuid : uuids) {
+						if(uuid.getUuid().equals(new UUID(0x4080ad8d8ba24846L, 0x8803a3206a8975beL))) {
+							mArrayAdapter.add(device);
+							if (mArrayAdapter != null)
+								serverlist.setAdapter(mArrayAdapter);
+							break;
+						}
+					}
+				}
+			}
+		}, filter);
+		
 		// this part AFTER all devices have been put to the mArrayAdapter!!!!
 		if (mArrayAdapter != null)
 			serverlist.setAdapter(mArrayAdapter);
@@ -107,6 +135,8 @@ public class MainActivity extends ActionBarActivity {
 				Intent intent = new Intent(view.getContext(), Game.class);
 				intent.putExtra("who", String.valueOf("Client"));
 				intent.putExtra("serverDevice", serverDevice);
+				mBluetoothAdapter.cancelDiscovery();
+				
 				startActivity(intent);
 
 			}
@@ -119,26 +149,6 @@ public class MainActivity extends ActionBarActivity {
 
 	}
 
-	// Create a BroadcastReceiver for ACTION_FOUND
-	private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			// When discovery finds a device
-			if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-				// Get the BluetoothDevice object from the Intent
-				BluetoothDevice device = intent
-						.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-				// Add the name and address to an array adapter to show in a
-				// ListView
-				// mArrayAdapter.add(device.getName() + "\n" +
-				// device.getAddress());
-			}
-		}
-	};
-	// Register the BroadcastReceiver
-	IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-
 	@Override
 	protected void onActivityResult(int arg0, int arg1, Intent arg2) {
 		Log.d(BLUETOOTH_SERVICE, "Bluetooth Callback");
@@ -149,14 +159,12 @@ public class MainActivity extends ActionBarActivity {
 	public void startServer(View view) {
 		System.out.println("start server thread");
 		// show wait box
-		serverDialog = ProgressDialog.show(this, "Waiting for Opponent",
-				"Please wait...", true);
-//		AccepThread serverThread = new AccepThread();
-//		serverThread.start();
 
-		// noch an richtige stelle einfügen
-		if (serverDialog.isShowing())
-			serverDialog.dismiss();
+		mBluetoothAdapter.cancelDiscovery();
+		Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+		discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 180);
+		startActivity(discoverableIntent);
+		
 		Intent intent = new Intent(this, Game.class);
 		intent.putExtra("who", String.valueOf("Server"));
 		startActivity(intent);
