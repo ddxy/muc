@@ -1,5 +1,11 @@
 package com.example.mensafinder;
 
+
+
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -11,11 +17,11 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.annotation.SuppressLint;
-import android.app.ActionBar.LayoutParams;
+import android.app.Activity;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.graphics.Paint.Style;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -33,38 +39,74 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.os.Build;
 
-public class MainActivity extends ActionBarActivity {
-
+public class MainActivity extends ActionBarActivity{
+	
 	public static Button discoverBtn;
 	public static Button searchBtn;
 	public static Button settingsBtn;
 	public static Context ctx;
-
+	
+	public static int azimut;
+	public static HashMap<String, Integer> user = new HashMap<String, Integer>();
+	
+	public class CustomDrawableView extends View {
+	    Paint paint = new Paint();
+	    public CustomDrawableView(Context context) {
+	      super(context);
+	      paint.setColor(0xff00ff00);
+	      paint.setStyle(Style.STROKE);
+	      paint.setStrokeWidth(2);
+	      paint.setAntiAlias(true);
+	    }
+	 
+	    @Override
+	    protected void onDraw(Canvas canvas) {
+	      int width = getWidth();
+	      int height = getHeight();
+	      int centerx = width/2;
+	      int centery = height/2;
+	      canvas.drawLine(centerx, 0, centerx, height, paint);
+	      canvas.drawLine(0, centery, width, centery, paint);
+	      paint.setColor(0xff0000ff);
+	      // Rotate the canvas with the azimut      
+//	      if (azimut != null)
+	      for(Map.Entry<String, Integer> entry : user.entrySet()) {
+		      canvas.rotate(-(entry.getValue()), centerx, centery);
+		      canvas.drawLine(centerx, 40, centerx, centery, paint);
+//		      canvas.drawLine(-1000, centery, 1000, centery, paint);
+		      paint.setTextSize(48f);
+		      canvas.drawText(entry.getKey(), centerx-20, 45, paint);
+	      }
+	      paint.setColor(0xff00ff00);
+	    }
+	  }
+	public static CustomDrawableView mCustomDrawableView;
+	
 	public void discover(View view) {
 
-		// todo: azimuth to deg, Get Name from Somewhere
+		//todo: azimuth to deg, Get Name from Somewhere
 		int degrees = Orientation.curr_orientation;
-		String name = "david";
+		String name = "david" + degrees;
 		HttpQueries.sendMyOrientation(degrees, name);
 
 	}
-
+	
+	
 	public void search(View view) {
-		// request list from persons of interest
+//		request list from persons of interest
 		Thread kraken1 = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				String result = HttpQueries.requestListOfPersonsOfInterest();
 				if (result != null) {
-					// Json, lets have fun
+//					Json, lets have fun
 					updateMyPic(result);
-				} else {
+				}else {
 					System.out.println("result: null");
 				}
 
@@ -73,47 +115,46 @@ public class MainActivity extends ActionBarActivity {
 			private void updateMyPic(String result) {
 				try {
 					JSONObject jObject = new JSONObject(result);
-					JSONArray listOfPersonsOfInterest = jObject
-							.getJSONArray("list");
+					JSONArray listOfPersonsOfInterest = jObject.getJSONArray("list");
 					for (int i = 0; i < listOfPersonsOfInterest.length(); i++) {
-						JSONObject rowPersonOfInterest = listOfPersonsOfInterest
-								.getJSONObject(i);
-						String nameOfPersonOfInterest = rowPersonOfInterest
-								.getString("user");
-						int orientationOfPersonOfInterest = rowPersonOfInterest
-								.getInt("orientation");
-						System.out.println(nameOfPersonOfInterest + ": "
-								+ orientationOfPersonOfInterest);
-
-						// todo: update mensaplan
+					    JSONObject rowPersonOfInterest = listOfPersonsOfInterest.getJSONObject(i);
+					    String nameOfPersonOfInterest = rowPersonOfInterest.getString("user");
+					    int orientationOfPersonOfInterest = rowPersonOfInterest.getInt("orientation");
+					    System.out.println(nameOfPersonOfInterest + ": " + orientationOfPersonOfInterest);
+						
+//					    todo: update mensaplan
+					    
+					    //add to map and update compass
+					    user.put(nameOfPersonOfInterest, orientationOfPersonOfInterest);
+					    mCustomDrawableView.postInvalidate();
 					}
-
+					
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-
+				
 			}
 		});
-
-		// update me when i press discover/changes arrives
+		
+//		update me when i press discover/changes arrives		
 		Thread kraken2 = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				HttpQueries.pushUpdates();
 			}
 		});
-
-		// RELEASE THE KRAKENS
+		
+//		RELEASE THE KRAKENS
 		kraken1.start();
 		kraken2.start();
 
-		// someday someone wants to enable it back
-		searchBtn.setEnabled(false);
+//		someday someone wants to enable it back
+		searchBtn.setEnabled(false); 
 	}
 
 	public void settings(View view) {
-
+		
 	}
 
 	@SuppressLint("NewApi")
@@ -121,7 +162,7 @@ public class MainActivity extends ActionBarActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		
 		if (savedInstanceState == null) {
 
 		}
@@ -129,85 +170,45 @@ public class MainActivity extends ActionBarActivity {
 		discoverBtn = (Button) findViewById(R.id.discover);
 		searchBtn = (Button) findViewById(R.id.search);
 		settingsBtn = (Button) findViewById(R.id.settings);
+
+		LinearLayout commentsLayout=(LinearLayout) findViewById(R.id.compasscontainer);
+		mCustomDrawableView = new CustomDrawableView(this);
+		commentsLayout.addView(mCustomDrawableView); 
+		
+//		 ImageView imageView = new ImageView(this) {
+//	        	@Override
+//	        	public void draw(Canvas canvas) {
+//	        		canvas.scale((float)1.0, (float)1.5);
+//	        		canvas.translate(0, -100);
+//	        		super.draw(canvas);
+////	        		Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+////	        		canvas.drawCircle(0, 0, 5, p);
+//	        	}
+//	        };
+		ImageView imageView = (ImageView) findViewById(R.id.imageview);
+		
+		imageView.setBackgroundColor(Color.WHITE);
+//		svg doesnt work
+//		imageView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+//		SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.mensa); 
+        imageView.setImageResource((R.raw.mensa1));
+
+		
+
+	    
+//		LinearLayout rl = (LinearLayout) findViewById(R.id.image);
+//		LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+//				LinearLayout.LayoutParams.WRAP_CONTENT,
+//				LinearLayout.LayoutParams.WRAP_CONTENT);
+//		rl.addView(imageView);
 		
 		Orientation orientThread = new Orientation();
 		orientThread.start();
 
-//		LinearLayout to add Images to View
-		LinearLayout rl = (LinearLayout) findViewById(R.id.linearlayout);
-		LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.WRAP_CONTENT,
-				LinearLayout.LayoutParams.WRAP_CONTENT);
-		
 
-
-/*
- * 		Preferable way to create/draw images. Maybe CompassView and MensaView
- * 		When we create a new Object DrawView, it calls onDraw (dunno why)
- * 		when we call invalidate(), we can call onDraw manually
- */
-		Resources res4 = getResources();
-		Bitmap bitmap = BitmapFactory.decodeResource(res4, R.raw.mensa1);
-		// Canvas canvas = new Canvas(bitmap.copy(Bitmap.Config.ARGB_8888,
-		// true));
-		DrawView i2 = new DrawView(this);
-		i2.invalidate();
-		i2.setImageBitmap(bitmap);
-		i2.setAdjustViewBounds(true); // set the ImageView bounds to match the
-										// Drawable's dimensions
-		i2.setLayoutParams(new Gallery.LayoutParams(LayoutParams.WRAP_CONTENT,
-				LayoutParams.WRAP_CONTENT));
-		rl.addView(i2, lp);
-		
-/*
- * 		another way to create/draw images but with inner methods. i dont like. lets keep it clear.
- */
-		ImageView imageView = new ImageView(this) {
-			Paint paint = new Paint();
-			
-			@Override
-			public void draw(Canvas canvas) {
-				paint.setColor(Color.BLUE);
-				super.draw(canvas);
-				canvas.drawLine(10, 50, 90, 10, paint);
-
-			}
-		};
-
-		imageView.setBackgroundColor(Color.WHITE);
-		// svg doesnt work
-		// imageView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-		// SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.mensa);
-		imageView.setImageResource((R.raw.mensa1));
-
-		imageView.invalidate();
-		rl.addView(imageView, lp);
-		
-		
-		// testimage without anything
-		// ImageView i = new ImageView(this);
-		// i.setImageResource(R.raw.mensa1);
-		// i.setAdjustViewBounds(true); // set the ImageView bounds to match the
-		// Drawable's dimensions
-		// i.setLayoutParams(new Gallery.LayoutParams(LayoutParams.WRAP_CONTENT,
-		// LayoutParams.WRAP_CONTENT));
-		// rl.addView(i, lp);
-
-		// myImage.draw(canvas)
-
-		// testimage with drawable
-		// ImageView i3 = new ImageView(this);
-		// Resources res = this.getResources();
-		// Drawable myImage = res.getDrawable(R.raw.mensa1);
-		// i3.setImageDrawable(myImage);
-		// i3.setAdjustViewBounds(true); // set the ImageView bounds to match
-		// the Drawable's dimensions
-		// i3.setLayoutParams(new
-		// Gallery.LayoutParams(LayoutParams.WRAP_CONTENT,
-		// LayoutParams.WRAP_CONTENT));
-		// rl.addView(i3, lp);
 
 	}
+	
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -228,5 +229,6 @@ public class MainActivity extends ActionBarActivity {
 	/**
 	 * A placeholder fragment containing a simple view.
 	 */
+
 
 }

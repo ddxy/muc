@@ -152,9 +152,9 @@ public class HttpQueries {
 		String line = "";
 		String result = "";
 		while ((line = bufferedReader.readLine()) != null){
-			
 			result += line;
 		}
+		
 		inputStream.close();
 		return result;
 
@@ -173,6 +173,7 @@ public class HttpQueries {
 			System.out.println("line:" + line);
 //			todo: if update: change position in canvas, if logout: remove
 //			save in hashmap, remove at logout
+		
 		}
 
 		inputStream.close();
