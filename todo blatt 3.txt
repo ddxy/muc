@@ -1,0 +1,19 @@
+Theorieaufgaben: 
+Ag1 vor/nachteile
+Ag2 fragezeichen??
+Ag3 todo
+
+Prog:
+
+- MensaBild
+
+
+Sehr Trivial:
+- Dialog für Nutzernamen eingeben
+- Wird das Gerät bewegt im Discoverymode, dann muss das Popup aus dem Discovery auch erscheinen.
+Eig reicht hier Pitch sich anzuschauen ( etwa -10 bis + 10 Reichweite? )
+- Gerät muss flach auf dem Tisch liegen ( Siehe Pitch)
+
+undefined:
+Zurzeit wird der Timeout von den nutzern gar nicht so wirklich behandelt (ab age:300 wird der nutzer gelöscht, aber der 
+server schickt uns von seiner seite aus keine logout nachricht) ... sollte man eigentlich schon

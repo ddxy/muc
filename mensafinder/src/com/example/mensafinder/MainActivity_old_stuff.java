@@ -39,7 +39,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.os.Build;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity_old_stuff extends ActionBarActivity {
 
 	public static Button discoverBtn;
 	public static Button searchBtn;
