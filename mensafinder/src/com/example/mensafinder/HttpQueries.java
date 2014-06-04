@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -22,6 +23,7 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.RequestConnControl;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.loopj.android.http.AsyncHttpClient;
@@ -169,11 +171,25 @@ public class HttpQueries {
 		String line = "";
 		String result = "";
 		while ((line = bufferedReader.readLine()) != null){			
-			//update Mensaplan-UI with Handler or static Things
 			System.out.println("line:" + line);
-//			todo: if update: change position in canvas, if logout: remove
-//			save in hashmap, remove at logout
-		
+			try {
+				JSONObject jObject = new JSONObject(line);
+				if (jObject.has("update")) {
+					
+					String name = jObject.getJSONObject("update").getString("user");
+					int orientation =Integer.parseInt ( jObject.getJSONObject("update").getString("orientation") );
+					MainActivity.user.put(name, orientation);
+					MainActivity.mCustomDrawableView.postInvalidate();
+				}else if (jObject.has("logout")) {
+					String name = jObject.getJSONObject("logout").getString("user");
+					MainActivity.user.remove(name);
+					MainActivity.mCustomDrawableView.postInvalidate();
+				}
+				
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		inputStream.close();
@@ -181,7 +197,28 @@ public class HttpQueries {
 
 	}
 
+	@SuppressLint("NewApi")
+	public static String logout(String name) {
 
+		InputStream inputStream = null;
+		String result = "";
+		try {
+			HttpClient httpclient = new DefaultHttpClient();
+
+
+			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+					.permitAll().build();
+			StrictMode.setThreadPolicy(policy);
+			HttpDelete httpDelete = new HttpDelete(
+					"http://barracuda-vm8.informatik.uni-ulm.de/user/" + name + "/orientation"); 
+			HttpResponse httpResponse = httpclient.execute(httpDelete);
+			inputStream = httpResponse.getEntity().getContent();
+			
+		} catch (Exception e) {
+			//Log.d("InputStream", e.getMessage());
+		}
+		return result;
+	}
 
 
 }

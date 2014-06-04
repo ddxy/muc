@@ -47,8 +47,8 @@ android:layout_width="fill_parent"
     </LinearLayout>
     <LinearLayout
 	android:id="@+id/compasscontainer"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
         android:layout_below="@+id/linearlayout"
         android:layout_marginTop="20dp"
         android:layout_centerHorizontal="true"

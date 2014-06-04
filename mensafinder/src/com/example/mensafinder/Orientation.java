@@ -52,11 +52,12 @@ public class Orientation extends Thread implements SensorEventListener{
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		MainActivity.azimut = (int)event.values[0];
-		float y = event.values[1];
-		float z = event.values[2];
+		float pitch = event.values[1];
+		float roll = event.values[2];
 		
 //		System.out.println(String.valueOf(x));
 		curr_orientation = (int) MainActivity.azimut;
+
 //		textAzimuth.setText(String.valueOf(x));
 //		textPitch.setText(String.valueOf(y));
 //		textRoll.setText(String.valueOf(z));
