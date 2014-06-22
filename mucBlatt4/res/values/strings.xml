@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">mucBlatt4</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_mosquito_service">MosquitoService</string>
+    <string name="title_activity_mosquito">MosquitoActivity</string>
+    <string name="title_activity_parachute">ParachuteActivity</string>
+	<string name="parachute_text">
+	    Sie befinden sich seit einiger Zeit im freien Fall!
+	    Hoffentlich haben sie einen Fallschirm zur Hand; die
+	    geschätzte Höhe über NN beträgt noch:
+	</string>
+    <string name="parachute_text2">
+	    Sollten sie sich in der unangenehmen Lage befinden,
+	    keinen funktionsfähigen Fallschirm zur Hand zu haben,
+	    können sie durch Klick auf folgenden Button eine
+	    Abschiedsnachricht verfassen.
+	</string>
+</resources>
